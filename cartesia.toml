@@ -1,0 +1,4 @@
+# Cartesia deploy config. Present so Cartesia recognises this repo as a Line
+# agent and auto-deploys it on push; the defaults are fine, so it's intentionally
+# empty. Secrets (OPENROUTER_API_KEY, Upstash, Mem0) are set in the Cartesia
+# dashboard, never here.

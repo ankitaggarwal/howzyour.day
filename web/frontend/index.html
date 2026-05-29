@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Today · talk it out</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --ink:#15100e; --cream:#f3ebe1; --muted:#b6a597;
+      --honey:#f0b46a; --rose:#e58e76;
+      --glass:rgba(40,29,25,.5);
+    }
+    *{ -webkit-font-smoothing:antialiased; }
+    body{
+      margin:0; min-height:100vh; color:var(--cream);
+      font-family:'Hanken Grotesk',ui-sans-serif,sans-serif;
+      background:radial-gradient(130% 120% at 50% -10%, #321f17 0%, #1b120f 46%, #0c0806 100%);
+      overflow:hidden;
+    }
+    .display{ font-family:'Instrument Serif',Georgia,serif; letter-spacing:.01em; }
+    /* drifting warm atmosphere */
+    .blob{ position:fixed; border-radius:50%; filter:blur(90px); opacity:.45; z-index:0; pointer-events:none; }
+    .blob.a{ width:46vw;height:46vw; left:-8vw;top:-6vw; background:#c9803f;
+      animation:driftA 22s ease-in-out infinite; }
+    .blob.b{ width:40vw;height:40vw; right:-6vw;bottom:-10vw; background:#c25a55;
+      animation:driftB 26s ease-in-out infinite; }
+    .blob.c{ width:30vw;height:30vw; left:55vw;top:8vw; background:#7a4a36; opacity:.3;
+      animation:driftA 30s ease-in-out infinite reverse; }
+    @keyframes driftA{ 50%{ transform:translate(6vw,4vh) scale(1.1) } }
+    @keyframes driftB{ 50%{ transform:translate(-5vw,-3vh) scale(1.08) } }
+    /* grain */
+    .grain{ position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.05; mix-blend-mode:soft-light;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+    /* blur-reveal gating */
+    #app{ position:relative; z-index:2; filter:blur(22px) saturate(.7) brightness(.8); transform:scale(1.03);
+      opacity:.55; pointer-events:none; transition:filter 1s cubic-bezier(.2,.8,.2,1), transform 1s cubic-bezier(.2,.8,.2,1), opacity 1s; }
+    body.authed #app{ filter:none; transform:none; opacity:1; pointer-events:auto; }
+
+    #auth{ position:fixed; inset:0; z-index:30; display:grid; place-items:center;
+      background:radial-gradient(80% 60% at 50% 40%, rgba(12,8,6,.4), rgba(12,8,6,.75));
+      backdrop-filter:blur(6px); transition:opacity .7s ease, visibility .7s; }
+    body.authed #auth{ opacity:0; visibility:hidden; pointer-events:none; }
+
+    .card{ background:linear-gradient(180deg, rgba(54,40,34,.62), rgba(32,23,20,.62));
+      border:1px solid rgba(245,225,205,.12); border-radius:28px;
+      box-shadow:0 30px 80px -20px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.06);
+      backdrop-filter:blur(22px) saturate(1.1); }
+    .gbtn{ transition:transform .2s ease, box-shadow .2s ease; }
+    .gbtn:hover{ transform:translateY(-1px); box-shadow:0 14px 30px -10px rgba(0,0,0,.6); }
+    #orbBtn{ background:none; border:0; cursor:pointer; outline:none; }
+    #orbBtn:focus-visible{ outline:2px solid rgba(240,180,106,.6); border-radius:50%; }
+    .reveal{ opacity:0; transform:translateY(14px); animation:rise .9s cubic-bezier(.2,.8,.2,1) forwards; }
+    .d1{animation-delay:.05s}.d2{animation-delay:.18s}.d3{animation-delay:.32s}.d4{animation-delay:.46s}
+    @keyframes rise{ to{ opacity:1; transform:none } }
+    .pill{ background:rgba(34,24,21,.5); border:1px solid rgba(245,225,205,.1); backdrop-filter:blur(14px); }
+    .field{ background:rgba(12,8,6,.55); border:1px solid rgba(245,225,205,.12); }
+    .field:focus{ outline:none; border-color:rgba(240,180,106,.6); box-shadow:0 0 0 3px rgba(240,180,106,.12); }
+  </style>
+</head>
+<body>
+  <div class="blob a"></div><div class="blob b"></div><div class="blob c"></div>
+  <div class="grain"></div>
+
+  <!-- VOICE STAGE (blurred until signed in) -->
+  <section id="app" class="min-h-screen flex flex-col items-center justify-center px-6 text-center">
+    <button id="signout" class="absolute right-6 top-6 text-xs tracking-wide text-[color:var(--muted)] hover:text-[color:var(--cream)] transition">sign out</button>
+
+    <p id="hello" class="display reveal d1 text-4xl sm:text-5xl tracking-tight"></p>
+    <p id="subhint" class="reveal d2 mt-3 text-[15px] text-[color:var(--muted)]">Press <kbd class="rounded bg-white/10 px-1.5 py-0.5 text-[11px]">space</kbd>, or tap, and just start talking.</p>
+
+    <button id="orbBtn" class="reveal d3 mt-10 mb-7" aria-label="Start or stop talking">
+      <canvas id="orb" width="720" height="720" class="h-[330px] w-[330px] sm:h-[360px] sm:w-[360px]"></canvas>
+    </button>
+
+    <p id="status" class="reveal d3 text-[11px] uppercase tracking-[0.32em] text-[color:var(--muted)]">tap to begin</p>
+
+    <div class="reveal d4 mt-12 w-full max-w-sm pill rounded-2xl px-5 py-4 text-left">
+      <p class="text-sm text-[color:var(--cream)]/90">Prefer a real call? I can ring a US number.</p>
+      <p class="mt-1 text-xs text-[color:var(--muted)]">US numbers only for now. Outside the US, use the voice above.</p>
+      <form id="callForm" class="mt-3 flex gap-2">
+        <input id="phone" type="tel" inputmode="tel" placeholder="+1 555 123 4567"
+               class="field flex-1 rounded-xl px-3.5 py-2.5 text-sm text-[color:var(--cream)] placeholder:text-[color:var(--muted)]/70" />
+        <button class="rounded-xl px-4 py-2.5 text-sm font-medium text-[#231712] bg-gradient-to-b from-[#f3c07a] to-[#e89a52] hover:from-[#f6cb8b] transition">Call me</button>
+      </form>
+      <p id="callmsg" class="mt-2 text-xs text-[color:var(--muted)]"></p>
+    </div>
+  </section>
+
+  <!-- SIGN-IN OVERLAY -->
+  <section id="auth">
+    <div class="card w-[min(92vw,420px)] px-9 py-11 text-center">
+      <div class="mx-auto mb-7 h-14 w-14 rounded-full bg-gradient-to-br from-[#f3c07a] to-[#e58e76] shadow-[0_0_50px_-6px_rgba(240,160,90,.8)]"></div>
+      <h1 class="display text-5xl tracking-tight">Today</h1>
+      <p class="mt-3 text-[15px] leading-relaxed text-[color:var(--muted)]">Call in, talk through your day.<br>I’ll be here, and I’ll remember you.</p>
+
+      <form id="magicForm" class="mt-8 flex flex-col gap-3">
+        <input id="email" type="email" required autocomplete="email" placeholder="you@email.com"
+               class="field w-full rounded-xl px-4 py-3 text-center text-sm text-[color:var(--cream)] placeholder:text-[color:var(--muted)]/70" />
+        <button class="gbtn rounded-full bg-gradient-to-b from-[#f3c07a] to-[#e89a52] px-6 py-3.5 font-medium text-[#231712]">Let’s talk</button>
+      </form>
+      <p id="maghint" class="mt-3 text-xs text-[color:var(--muted)]">Pop in your email and I’ll send you a one-tap link.</p>
+
+      <div id="sent" class="hidden mt-6 rounded-xl border border-white/10 bg-white/5 px-4 py-4 text-sm leading-relaxed text-[color:var(--cream)]/90"></div>
+      <p id="autherr" class="mt-4 text-sm text-rose-300/90"></p>
+    </div>
+  </section>
+
+  <script>
+  const $ = (id) => document.getElementById(id);
+  let me = { authenticated: false };
+  let ws, ctx, micStream, source, processor, streamId;
+  let active = false, inLevel = 0, outLevel = 0, playHead = 0, sources = [];
+
+  // ---------- boot ----------
+  (async function init() {
+    const err = new URLSearchParams(location.search).get('error');
+    if (err === 'expired') $('autherr').textContent = 'That link expired. Pop your email in for a fresh one.';
+    else if (err) $('autherr').textContent = 'That sign-in link didn’t work. Try once more.';
+    try { me = await (await fetch('/api/me')).json(); } catch {}
+    if (me.authenticated) {
+      document.body.classList.add('authed');
+      $('hello').textContent = greeting(me.user && me.user.name);
+    } else if (me.email_configured === false) {
+      $('autherr').textContent = 'Email sign-in isn’t set up yet.';
+    }
+    requestAnimationFrame(loop);
+  })();
+
+  function greeting(name) {
+    const h = new Date().getHours();
+    const part = h < 5 ? 'Still up' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : h < 21 ? 'Good evening' : 'Winding down';
+    return name ? `${part}, ${name}.` : `${part}.`;
+  }
+
+  $('magicForm') && $('magicForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = $('email').value.trim();
+    const btn = e.submitter; if (btn) btn.disabled = true;
+    $('autherr').textContent = '';
+    try {
+      const r = await fetch('/auth/request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok) {
+        $('magicForm').classList.add('hidden');
+        $('maghint').classList.add('hidden');
+        $('sent').classList.remove('hidden');
+        $('sent').textContent = `Check your inbox. I just sent a one-tap link to ${email}. It expires in 30 minutes.`;
+      } else {
+        $('autherr').textContent = d.detail || 'Couldn’t send the link. Try again.';
+        if (btn) btn.disabled = false;
+      }
+    } catch { $('autherr').textContent = 'Network error. Try again.'; if (btn) btn.disabled = false; }
+  });
+
+  // ---------- audio helpers ----------
+  function f32ToB64(f) {
+    const i = new Int16Array(f.length);
+    for (let n = 0; n < f.length; n++) { let s = Math.max(-1, Math.min(1, f[n])); i[n] = s < 0 ? s * 0x8000 : s * 0x7fff; }
+    const b = new Uint8Array(i.buffer); let str = '';
+    for (let n = 0; n < b.length; n++) str += String.fromCharCode(b[n]);
+    return btoa(str);
+  }
+  function b64ToF32(b64) {
+    const bin = atob(b64), b = new Uint8Array(bin.length);
+    for (let n = 0; n < bin.length; n++) b[n] = bin.charCodeAt(n);
+    const i = new Int16Array(b.buffer), f = new Float32Array(i.length);
+    for (let n = 0; n < i.length; n++) f[n] = i[n] / 0x8000;
+    return f;
+  }
+  function rms(f) { let s = 0; for (let i = 0; i < f.length; i++) s += f[i] * f[i]; return Math.sqrt(s / f.length); }
+
+  // ---------- session ----------
+  const wsUrl = () => (location.protocol === 'https:' ? 'wss' : 'ws') + '://' + location.host + '/ws';
+
+  async function start() {
+    if (active) return;
+    active = true; setStatus('connecting');
+    try {
+      ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    } catch (e) { active = false; setStatus('mic blocked'); return; }
+
+    streamId = (crypto.randomUUID && crypto.randomUUID()) || String(Date.now());
+    ws = new WebSocket(wsUrl());
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ event: 'start', stream_id: streamId, config: { input_format: 'pcm_44100' } }));
+      setStatus('listening'); startCapture();
+    };
+    ws.onmessage = (ev) => {
+      let d; try { d = JSON.parse(ev.data); } catch { return; }
+      if (d.event === 'media_output' && d.media && d.media.payload) { const f = b64ToF32(d.media.payload); outLevel = Math.min(1, rms(f) * 5); playChunk(f); setStatus('speaking'); }
+      else if (d.event === 'clear') { flush(); setStatus('listening'); }
+      else if (d.event === 'error') setStatus('error');
+    };
+    ws.onclose = (e) => { const why = e.reason || ''; teardown(); setStatus(why ? 'ended' : 'tap to begin'); };
+    ws.onerror = () => setStatus('connection error');
+  }
+
+  function startCapture() {
+    source = ctx.createMediaStreamSource(micStream);
+    processor = ctx.createScriptProcessor(2048, 1, 1);
+    const mute = ctx.createGain(); mute.gain.value = 0;
+    source.connect(processor); processor.connect(mute); mute.connect(ctx.destination);
+    processor.onaudioprocess = (e) => {
+      if (!ws || ws.readyState !== 1) return;
+      const f = e.inputBuffer.getChannelData(0);
+      inLevel = Math.min(1, rms(f) * 5);
+      ws.send(JSON.stringify({ event: 'media_input', stream_id: streamId, media: { payload: f32ToB64(f) } }));
+    };
+  }
+
+  function playChunk(f) {
+    if (!ctx) return;
+    const buf = ctx.createBuffer(1, f.length, 44100); buf.copyToChannel(f, 0);
+    const s = ctx.createBufferSource(); s.buffer = buf; s.connect(ctx.destination);
+    const now = ctx.currentTime; if (playHead < now) playHead = now;
+    s.start(playHead); playHead += buf.duration; sources.push(s);
+    s.onended = () => { sources = sources.filter((x) => x !== s); };
+  }
+  function flush() { sources.forEach((s) => { try { s.stop(); } catch {} }); sources = []; playHead = 0; outLevel = 0; }
+
+  function teardown() {
+    active = false;
+    try { processor && processor.disconnect(); } catch {}
+    try { source && source.disconnect(); } catch {}
+    micStream && micStream.getTracks().forEach((t) => t.stop());
+    flush();
+    try { ctx && ctx.close(); } catch {}
+    ctx = null; ws = null; inLevel = 0;
+  }
+  function stop() {
+    if (!active) return;
+    if (ws && ws.readyState === 1) { try { ws.close(1000, 'user ended'); } catch {} }
+    teardown(); setStatus('tap to begin');
+  }
+  const setStatus = (t) => { $('status').textContent = t; };
+
+  // ---------- the orb ----------
+  const C_IDLE = [223, 149, 99], C_LISTEN = [242, 190, 121], C_SPEAK = [231, 138, 118];
+  let cur = C_IDLE.slice();
+  function lerp(a, t) { for (let i = 0; i < 3; i++) cur[i] += (a[i] - cur[i]) * 0.06; }
+
+  function loop() {
+    const cv = $('orb');
+    if (cv) {
+      const c = cv.getContext('2d'), w = cv.width, h = cv.height, cx = w / 2, cy = h / 2;
+      const t = performance.now();
+      c.clearRect(0, 0, w, h);
+
+      const breath = 0.5 + 0.5 * Math.sin(t * 0.0011);
+      const lvl = Math.max(inLevel, outLevel);
+      const speaking = outLevel > inLevel + 0.02;
+      lerp(active ? (speaking ? C_SPEAK : C_LISTEN) : C_IDLE, 1);
+      const r = Math.round(cur[0]), g = Math.round(cur[1]), b = Math.round(cur[2]);
+
+      const energy = (active ? 0.22 : 0.10) + lvl * 0.7 + breath * (active ? 0.05 : 0.10);
+      const base = Math.min(w, h) * 0.15;
+      const R = base * (1 + energy * 0.45);
+
+      // expanding sound rings (only live)
+      if (active) {
+        for (let i = 0; i < 3; i++) {
+          const pr = ((t * 0.00026) + i / 3) % 1;
+          c.beginPath();
+          c.strokeStyle = `rgba(${r},${g},${b},${(1 - pr) * (0.12 + lvl * 0.18)})`;
+          c.lineWidth = 1.5;
+          c.arc(cx, cy, R * (1 + pr * 1.5), 0, 7); c.stroke();
+        }
+      }
+      // outer bloom
+      let g1 = c.createRadialGradient(cx, cy, R * 0.3, cx, cy, R * 2.1);
+      g1.addColorStop(0, `rgba(${r},${g},${b},${0.42 + lvl * 0.3})`);
+      g1.addColorStop(0.45, `rgba(${r},${g},${b},.12)`);
+      g1.addColorStop(1, `rgba(${r},${g},${b},0)`);
+      c.fillStyle = g1; c.beginPath(); c.arc(cx, cy, R * 2.1, 0, 7); c.fill();
+      // lit core sphere
+      const hx = cx - R * 0.28, hy = cy - R * 0.30;
+      let g2 = c.createRadialGradient(hx, hy, R * 0.08, cx, cy, R);
+      g2.addColorStop(0, 'rgba(255,240,214,.97)');
+      g2.addColorStop(0.38, `rgba(${r},${g},${b},.96)`);
+      g2.addColorStop(1, `rgba(${Math.round(r * 0.62)},${Math.round(g * 0.46)},${Math.round(b * 0.5)},.95)`);
+      c.save(); c.shadowBlur = 55 + lvl * 70; c.shadowColor = `rgba(${r},${g},${b},.7)`;
+      c.fillStyle = g2; c.beginPath(); c.arc(cx, cy, R, 0, 7); c.fill(); c.restore();
+      // slow rotating sheen
+      c.save(); c.globalCompositeOperation = 'overlay';
+      const a = t * 0.0006, sx = cx + Math.cos(a) * R * 0.26, sy = cy + Math.sin(a) * R * 0.26;
+      let g3 = c.createRadialGradient(sx, sy, 0, sx, sy, R * 0.95);
+      g3.addColorStop(0, 'rgba(255,255,255,.22)'); g3.addColorStop(1, 'rgba(255,255,255,0)');
+      c.fillStyle = g3; c.beginPath(); c.arc(cx, cy, R, 0, 7); c.fill(); c.restore();
+
+      inLevel *= 0.90; outLevel *= 0.92;
+    }
+    requestAnimationFrame(loop);
+  }
+
+  // ---------- controls ----------
+  function toggle() { active ? stop() : start(); }
+  $('orbBtn') && $('orbBtn').addEventListener('click', toggle);
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && me.authenticated && e.target.tagName !== 'INPUT') { e.preventDefault(); toggle(); }
+  });
+  $('signout') && $('signout').addEventListener('click', async () => { await fetch('/api/logout', { method: 'POST' }); location.reload(); });
+  $('callForm') && $('callForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const to = $('phone').value.trim();
+    $('callmsg').textContent = 'Calling you…';
+    try {
+      const r = await fetch('/api/get-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to_number: to }) });
+      const d = await r.json().catch(() => ({}));
+      $('callmsg').textContent = r.ok ? 'On its way. Your phone should ring shortly.' : ('Couldn’t place the call: ' + (d.detail || d.error || r.status));
+    } catch { $('callmsg').textContent = 'Network error placing the call.'; }
+  });
+  </script>
+</body>
+</html>

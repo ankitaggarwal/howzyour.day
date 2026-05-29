@@ -1,0 +1,35 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Package managers / lockfiles
+uv.lock
+.python-version
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+
+# Editor / OS files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Local AI-assistant tooling / notes (not part of the product)
+.claude/
+CLAUDE.md
+CLAUDE.local.md
