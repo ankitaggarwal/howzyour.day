@@ -1,6 +1,6 @@
-# Today Journal — Web Companion
+# HowzYourDay — Web Companion
 
-Talk to the Today Journal agent **from the browser** — no phone, no
+Talk to the HowzYourDay agent **from the browser** — no phone, no
 international call. Enter your email, click the one-tap link we send you, press
 space, and speak. It's the same agent and the same memory (Redis + Mem0) as the
 phone line; web users are simply keyed by `web:<hash(email)>` instead of a phone

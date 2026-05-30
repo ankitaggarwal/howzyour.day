@@ -1,5 +1,5 @@
 """
-Today Journal — web companion backend.
+HowzYourDay — web companion backend.
 
 A thin FastAPI app that lets a signed-in user talk to the SAME Cartesia agent
 from the browser (no phone, no international call). It does four things:
@@ -65,7 +65,7 @@ EMAIL_CONFIGURED = bool(SMTP_USER and SMTP_PASS)
 
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
 
-app = FastAPI(title="Today Journal Web")
+app = FastAPI(title="HowzYourDay Web")
 app.add_middleware(
     SessionMiddleware,
     secret_key=SESSION_SECRET,
@@ -74,7 +74,7 @@ app.add_middleware(
     https_only=BASE_URL.startswith("https"),
 )
 
-_signer = URLSafeTimedSerializer(SESSION_SECRET, salt="today-magic-link")
+_signer = URLSafeTimedSerializer(SESSION_SECRET, salt="howzyourday-magic-link")
 
 
 def web_user_id(email: str) -> str:
@@ -87,7 +87,7 @@ def _magic_email_html(link: str) -> str:
 <!doctype html><html><body style="margin:0;background:#15100e;">
   <div style="max-width:440px;margin:0 auto;padding:44px 28px;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;">
     <div style="height:44px;width:44px;border-radius:50%;background:linear-gradient(135deg,#f3c07a,#e58e76);margin-bottom:24px;"></div>
-    <h1 style="font-family:Georgia,'Times New Roman',serif;color:#f3ebe1;font-size:30px;font-weight:400;margin:0 0 10px;">Today</h1>
+    <h1 style="font-family:Georgia,'Times New Roman',serif;color:#f3ebe1;font-size:30px;font-weight:400;margin:0 0 10px;">HowzYour<span style="color:#e89a52;">Day</span></h1>
     <p style="color:#b6a597;font-size:15px;line-height:1.6;margin:0 0 28px;">Tap below to come in and talk through your day. This link works once and expires in 30 minutes.</p>
     <a href="{link}" style="display:inline-block;background:linear-gradient(180deg,#f3c07a,#e89a52);color:#231712;text-decoration:none;font-weight:600;font-size:15px;padding:14px 30px;border-radius:999px;">Start talking</a>
     <p style="color:#7c6c5f;font-size:12px;line-height:1.6;margin:30px 0 0;">If you didn't ask for this, you can safely ignore it.</p>
@@ -97,7 +97,7 @@ def _magic_email_html(link: str) -> str:
 
 def _send_magic_link(to_email: str, link: str) -> None:
     msg = EmailMessage()
-    msg["Subject"] = "Your Today sign-in link"
+    msg["Subject"] = "Your HowzYourDay sign-in link"
     msg["From"] = MAGIC_FROM
     msg["To"] = to_email
     msg.set_content(f"Tap to come in and talk through your day:\n\n{link}\n\nThis link works once and expires in 30 minutes.")

@@ -1,5 +1,5 @@
 """
-Today Journal — voice agent entry point (Cartesia Line SDK 0.2.10).
+HowzYourDay — voice agent entry point (Cartesia Line SDK 0.2.10).
 
 Flow:
   - get_agent(): on each call, resolve the caller's phone, load their memory,
@@ -198,5 +198,5 @@ async def get_agent(env: AgentEnv, call_request: CallRequest):
 app = VoiceAgentApp(get_agent=get_agent)
 
 if __name__ == "__main__":
-    logger.info("Starting Today Journal")
+    logger.info("Starting HowzYourDay")
     app.run()

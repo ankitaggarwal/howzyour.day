@@ -1,5 +1,5 @@
 """
-Today Journal — memory.
+HowzYourDay — memory.
 
 Two backends, one identity (the E.164 phone as user_id):
 

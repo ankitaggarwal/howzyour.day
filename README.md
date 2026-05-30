@@ -1,4 +1,4 @@
-# Today Journal
+# HowzYourDay
 
 A voice journaling companion on **Cartesia Line**. Call in, talk through your day, hang up — it remembers you next time. The caller's phone number is their identity; memory uses **Upstash Redis** (fast profile card) + **Mem0 Platform** (semantic recall), with the LLM served via **OpenRouter**.
 
@@ -51,6 +51,9 @@ Deploys automatically when pushed to the connected Cartesia repo.
 A browser version of the same agent (sign in by email, talk from the page —
 no phone call) lives in [`web/`](web/). It reuses the same agent and memory;
 web users are keyed by `web:<hash(email)>` instead of a phone number.
+
+Deploy it on a single DigitalOcean droplet behind automatic HTTPS — see
+[DEPLOY.md](DEPLOY.md).
 
 ## License
 

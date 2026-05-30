@@ -1,0 +1,13 @@
+# Caddy fetches a free HTTPS certificate automatically for this domain, as long
+# as howzyour.day points at this server's IP and ports 80/443 are open. All
+# traffic is forwarded to the "web" container on port 8787; WebSockets (the /ws
+# voice stream) pass through reverse_proxy unchanged.
+howzyour.day {
+	reverse_proxy web:8787
+}
+
+# Optional: also handle the www subdomain (redirect to the apex domain).
+# Uncomment if you point www.howzyour.day at this server too.
+# www.howzyour.day {
+# 	redir https://howzyour.day{uri}
+# }

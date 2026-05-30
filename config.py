@@ -1,5 +1,5 @@
 """
-Today Journal — settings.
+HowzYourDay — settings.
 
 Secrets come from the environment (no hardcoded keys). For local runs put them
 in a .env (gitignored); for deploy set them in the Cartesia dashboard's env.

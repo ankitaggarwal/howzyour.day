@@ -1,7 +1,7 @@
 [project]
-name = "today-journal"
+name = "howzyourday"
 version = "2.0.0"
-description = "Today Journal - a voice journaling companion that remembers you, on Cartesia Line"
+description = "HowzYourDay - a voice journaling companion that remembers you, on Cartesia Line"
 requires-python = ">=3.10"
 dependencies = [
     "cartesia-line==0.2.10",

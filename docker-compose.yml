@@ -1,0 +1,33 @@
+# Two small services on one DigitalOcean droplet:
+#   web   - the HowzYourDay web companion (FastAPI + the single-page voice UI)
+#   caddy - reverse proxy that terminates HTTPS and forwards to web
+#
+# The voice AGENT itself runs on Cartesia, not here — this droplet only serves
+# the browser companion. Redis, Mem0, OpenRouter and Cartesia are all external
+# and configured via web/backend/.env, so there's no database to run here.
+
+services:
+  web:
+    build: ./web                  # uses web/Dockerfile (FastAPI on :8787)
+    image: howzyourday-web:latest
+    env_file: web/backend/.env    # secrets live here on the server, never in git
+    expose:
+      - "8787"                    # internal only; Caddy is the public door
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data          # stores the Let's Encrypt certificate
+      - caddy_config:/config
+    depends_on:
+      - web
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
