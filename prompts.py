@@ -1,5 +1,5 @@
 """
-HowzYourDay — the agent's voice.
+HowzYourDay - the agent's voice.
 
 Everything that shapes how the companion sounds lives here, kept apart from the
 wiring (main.py) and the storage (memory.py). Three pieces:

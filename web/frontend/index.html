@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>HowzYourDay · talk it out</title>
+  <title>HowzYourDay · a voice companion that remembers you</title>
+  <meta name="description" content="Call in, talk through your day, hang up - it remembers you next time. An open-source voice journaling companion." />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,313 +13,370 @@
     :root{
       --ink:#15100e; --cream:#f3ebe1; --muted:#b6a597;
       --honey:#f0b46a; --rose:#e58e76;
-      --glass:rgba(40,29,25,.5);
+      --px:0; --py:0; /* pointer parallax, set in JS */
     }
     *{ -webkit-font-smoothing:antialiased; }
+    html{ scroll-behavior:smooth; }
     body{
       margin:0; min-height:100vh; color:var(--cream);
       font-family:'Hanken Grotesk',ui-sans-serif,sans-serif;
       background:radial-gradient(130% 120% at 50% -10%, #321f17 0%, #1b120f 46%, #0c0806 100%);
-      overflow:hidden;
     }
     .display{ font-family:'Instrument Serif',Georgia,serif; letter-spacing:.01em; }
-    /* brand wordmark: "HowzYour" in cream, "Day" picked out in the warm accent */
     .wordmark{ white-space:nowrap; }
     .wordmark .day{ background:linear-gradient(180deg,#f3c07a,#e58e76);
       -webkit-background-clip:text; background-clip:text; color:transparent; }
-    /* drifting warm atmosphere */
-    .blob{ position:fixed; border-radius:50%; filter:blur(90px); opacity:.45; z-index:0; pointer-events:none; }
+
+    /* drifting warm atmosphere - also drifts toward the pointer */
+    .blob{ position:fixed; border-radius:50%; filter:blur(90px); opacity:.42; z-index:0; pointer-events:none;
+      transition:transform .6s cubic-bezier(.2,.8,.2,1); }
     .blob.a{ width:46vw;height:46vw; left:-8vw;top:-6vw; background:#c9803f;
-      animation:driftA 22s ease-in-out infinite; }
+      transform:translate(calc(var(--px)*22px), calc(var(--py)*18px)); animation:driftA 22s ease-in-out infinite; }
     .blob.b{ width:40vw;height:40vw; right:-6vw;bottom:-10vw; background:#c25a55;
-      animation:driftB 26s ease-in-out infinite; }
-    .blob.c{ width:30vw;height:30vw; left:55vw;top:8vw; background:#7a4a36; opacity:.3;
-      animation:driftA 30s ease-in-out infinite reverse; }
+      transform:translate(calc(var(--px)*-26px), calc(var(--py)*-20px)); animation:driftB 26s ease-in-out infinite; }
+    .blob.c{ width:30vw;height:30vw; left:55vw;top:8vw; background:#7a4a36; opacity:.28;
+      transform:translate(calc(var(--px)*16px), calc(var(--py)*22px)); animation:driftA 30s ease-in-out infinite reverse; }
     @keyframes driftA{ 50%{ transform:translate(6vw,4vh) scale(1.1) } }
     @keyframes driftB{ 50%{ transform:translate(-5vw,-3vh) scale(1.08) } }
-    /* grain */
+
     .grain{ position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.05; mix-blend-mode:soft-light;
       background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
 
-    /* blur-reveal gating */
-    #app{ position:relative; z-index:2; filter:blur(22px) saturate(.7) brightness(.8); transform:scale(1.03);
-      opacity:.55; pointer-events:none; transition:filter 1s cubic-bezier(.2,.8,.2,1), transform 1s cubic-bezier(.2,.8,.2,1), opacity 1s; }
-    body.authed #app{ filter:none; transform:none; opacity:1; pointer-events:auto; }
+    .wrap{ position:relative; z-index:2; }
 
-    #auth{ position:fixed; inset:0; z-index:30; display:grid; place-items:center;
-      background:radial-gradient(80% 60% at 50% 40%, rgba(12,8,6,.4), rgba(12,8,6,.75));
-      backdrop-filter:blur(6px); transition:opacity .7s ease, visibility .7s; }
-    body.authed #auth{ opacity:0; visibility:hidden; pointer-events:none; }
-
-    .card{ background:linear-gradient(180deg, rgba(54,40,34,.62), rgba(32,23,20,.62));
-      border:1px solid rgba(245,225,205,.12); border-radius:28px;
-      box-shadow:0 30px 80px -20px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.06);
-      backdrop-filter:blur(22px) saturate(1.1); }
-    .gbtn{ transition:transform .2s ease, box-shadow .2s ease; }
-    .gbtn:hover{ transform:translateY(-1px); box-shadow:0 14px 30px -10px rgba(0,0,0,.6); }
-    #orbBtn{ background:none; border:0; cursor:pointer; outline:none; }
-    #orbBtn:focus-visible{ outline:2px solid rgba(240,180,106,.6); border-radius:50%; }
-    .reveal{ opacity:0; transform:translateY(14px); animation:rise .9s cubic-bezier(.2,.8,.2,1) forwards; }
-    .d1{animation-delay:.05s}.d2{animation-delay:.18s}.d3{animation-delay:.32s}.d4{animation-delay:.46s}
-    @keyframes rise{ to{ opacity:1; transform:none } }
     .pill{ background:rgba(34,24,21,.5); border:1px solid rgba(245,225,205,.1); backdrop-filter:blur(14px); }
-    .field{ background:rgba(12,8,6,.55); border:1px solid rgba(245,225,205,.12); }
-    .field:focus{ outline:none; border-color:rgba(240,180,106,.6); box-shadow:0 0 0 3px rgba(240,180,106,.12); }
+    .card{ background:linear-gradient(180deg, rgba(54,40,34,.5), rgba(32,23,20,.5));
+      border:1px solid rgba(245,225,205,.1); border-radius:24px;
+      box-shadow:0 30px 80px -28px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.05);
+      backdrop-filter:blur(18px) saturate(1.05);
+      transition:transform .4s cubic-bezier(.2,.8,.2,1), border-color .4s ease, box-shadow .4s ease; }
+    .card.lift:hover{ transform:translateY(-4px); border-color:rgba(240,180,106,.32);
+      box-shadow:0 40px 90px -30px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.07); }
+
+    .btn{ transition:transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease; }
+    .btn-primary{ background:linear-gradient(180deg,#f3c07a,#e89a52); color:#231712;
+      box-shadow:0 18px 40px -16px rgba(240,160,90,.7); position:relative; overflow:hidden; }
+    .btn-primary:hover{ transform:translateY(-2px); box-shadow:0 22px 48px -16px rgba(240,160,90,.9); }
+    /* a slow sheen sweeping the primary CTA */
+    .btn-primary::after{ content:""; position:absolute; inset:0; background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%);
+      transform:translateX(-120%); animation:sheen 5.5s ease-in-out infinite; }
+    @keyframes sheen{ 0%,55%{ transform:translateX(-120%) } 75%,100%{ transform:translateX(120%) } }
+    .btn-ghost{ background:rgba(34,24,21,.45); border:1px solid rgba(245,225,205,.16); color:var(--cream); backdrop-filter:blur(14px); }
+    .btn-ghost:hover{ transform:translateY(-2px); border-color:rgba(240,180,106,.5); }
+    .navlink{ transition:color .2s ease; }
+    .navlink:hover{ color:var(--cream); }
+
+    /* scroll / entrance reveal */
+    .reveal{ opacity:0; transform:translateY(20px); transition:opacity .9s cubic-bezier(.2,.8,.2,1), transform .9s cubic-bezier(.2,.8,.2,1); }
+    .reveal.in{ opacity:1; transform:none; }
+    .reveal.s1{transition-delay:.06s}.reveal.s2{transition-delay:.16s}.reveal.s3{transition-delay:.28s}.reveal.s4{transition-delay:.4s}
+
+    /* transcript */
+    .bubble{ max-width:84%; border-radius:18px; padding:.7rem 1rem; line-height:1.5; font-size:.95rem;
+      opacity:0; transform:translateY(8px); animation:pop .45s cubic-bezier(.2,.8,.2,1) forwards; }
+    @keyframes pop{ to{ opacity:1; transform:none } }
+    .bubble.echo{ background:linear-gradient(180deg, rgba(240,180,106,.16), rgba(229,142,118,.12));
+      border:1px solid rgba(240,180,106,.22); border-bottom-left-radius:6px; align-self:flex-start; }
+    .bubble.you{ background:rgba(243,235,225,.08); border:1px solid rgba(245,225,205,.12);
+      border-bottom-right-radius:6px; align-self:flex-end; color:var(--cream); }
+    .caret::after{ content:"▍"; margin-left:1px; color:var(--honey); animation:blink 1s step-end infinite; }
+    @keyframes blink{ 50%{ opacity:0 } }
+    .mem{ color:#f7d9a6; text-decoration:underline; text-decoration-color:rgba(240,180,106,.45); text-underline-offset:3px; }
+    .memtag{ display:inline-flex; align-items:center; gap:.35rem; margin-top:.5rem; font-size:.7rem;
+      color:#f3c07a; background:rgba(240,180,106,.12); border:1px solid rgba(240,180,106,.25);
+      border-radius:999px; padding:.18rem .6rem; opacity:0; transition:opacity .6s ease; }
+    .memtag.in{ opacity:1; }
+    .dots span{ display:inline-block; width:5px; height:5px; margin:0 1.5px; border-radius:50%; background:var(--honey);
+      animation:dot 1.2s infinite ease-in-out; }
+    .dots span:nth-child(2){ animation-delay:.15s } .dots span:nth-child(3){ animation-delay:.3s }
+    @keyframes dot{ 0%,60%,100%{ transform:translateY(0); opacity:.4 } 30%{ transform:translateY(-4px); opacity:1 } }
+
+    .chip{ background:rgba(34,24,21,.5); border:1px solid rgba(245,225,205,.12); border-radius:999px;
+      padding:.45rem .9rem; font-size:.8rem; color:var(--cream); backdrop-filter:blur(10px); }
+    .chip b{ color:var(--honey); font-weight:600; }
+
+    @media (prefers-reduced-motion: reduce){
+      .blob,.btn-primary::after,.dots span{ animation:none !important; }
+      .reveal{ opacity:1 !important; transform:none !important; }
+      .blob{ transform:none !important; }
+    }
   </style>
 </head>
 <body>
   <div class="blob a"></div><div class="blob b"></div><div class="blob c"></div>
   <div class="grain"></div>
 
-  <!-- VOICE STAGE (blurred until signed in) -->
-  <section id="app" class="min-h-screen flex flex-col items-center justify-center px-6 text-center">
-    <button id="signout" class="absolute right-6 top-6 text-xs tracking-wide text-[color:var(--muted)] hover:text-[color:var(--cream)] transition">sign out</button>
+  <div class="wrap">
+    <!-- NAV -->
+    <header class="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
+      <a href="#top" class="display wordmark text-2xl tracking-tight">HowzYour<span class="day">Day</span></a>
+      <nav class="flex items-center gap-6 text-sm text-[color:var(--muted)]">
+        <a class="navlink hidden sm:inline" href="#feel">What it's like</a>
+        <a class="navlink hidden sm:inline" href="#how">How it works</a>
+        <a class="navlink" href="https://github.com/ankitaggarwal/howzyour.day" target="_blank" rel="noopener">GitHub ↗</a>
+      </nav>
+    </header>
 
-    <p id="hello" class="display reveal d1 text-4xl sm:text-5xl tracking-tight"></p>
-    <p id="subhint" class="reveal d2 mt-3 text-[15px] text-[color:var(--muted)]">Press <kbd class="rounded bg-white/10 px-1.5 py-0.5 text-[11px]">space</kbd>, or tap, and just start talking.</p>
+    <!-- HERO -->
+    <main id="top" class="mx-auto flex max-w-3xl flex-col items-center px-6 pb-24 pt-4 text-center sm:pt-12">
+      <p class="reveal in pill rounded-full px-4 py-1.5 text-[11px] uppercase tracking-[0.3em] text-[color:var(--muted)]">
+        a voice companion · open source
+      </p>
 
-    <button id="orbBtn" class="reveal d3 mt-10 mb-7" aria-label="Start or stop talking">
-      <canvas id="orb" width="720" height="720" class="h-[330px] w-[330px] sm:h-[360px] sm:w-[360px]"></canvas>
-    </button>
+      <!-- Echo: the listening orb, reactive to your cursor -->
+      <button id="orbBtn" class="reveal in s1 mt-5 mb-1 cursor-pointer border-0 bg-transparent outline-none sm:mt-9" aria-label="Echo, your listening companion">
+        <canvas id="orb" width="640" height="640" class="h-[170px] w-[170px] sm:h-[268px] sm:w-[268px]"></canvas>
+      </button>
 
-    <p id="status" class="reveal d3 text-[11px] uppercase tracking-[0.32em] text-[color:var(--muted)]">tap to begin</p>
+      <h1 class="reveal in s2 display text-5xl leading-[1.05] tracking-tight sm:text-6xl">
+        How <span class="day">was</span> your day?
+      </h1>
+      <p class="reveal in s2 mx-auto mt-4 max-w-xl text-lg leading-relaxed text-[color:var(--cream)]/85 sm:mt-5">
+        Call in, talk it through, hang up - and it remembers you next time.
+        No app, no journal. Just say it out loud.
+      </p>
 
-    <div class="reveal d4 mt-12 w-full max-w-sm pill rounded-2xl px-5 py-4 text-left">
-      <p class="text-sm text-[color:var(--cream)]/90">Prefer a real call? I can ring a US number.</p>
-      <p class="mt-1 text-xs text-[color:var(--muted)]">US numbers only for now. Outside the US, use the voice above.</p>
-      <form id="callForm" class="mt-3 flex gap-2">
-        <input id="phone" type="tel" inputmode="tel" placeholder="+1 555 123 4567"
-               class="field flex-1 rounded-xl px-3.5 py-2.5 text-sm text-[color:var(--cream)] placeholder:text-[color:var(--muted)]/70" />
-        <button class="rounded-xl px-4 py-2.5 text-sm font-medium text-[#231712] bg-gradient-to-b from-[#f3c07a] to-[#e89a52] hover:from-[#f6cb8b] transition">Call me</button>
-      </form>
-      <p id="callmsg" class="mt-2 text-xs text-[color:var(--muted)]"></p>
-    </div>
-  </section>
+      <!-- THE TWO DOORS -->
+      <div class="reveal in s3 mt-7 flex w-full flex-col items-stretch justify-center gap-3 sm:mt-10 sm:flex-row">
+        <a href="tel:+14176143460" class="btn btn-primary flex items-center justify-center gap-2.5 rounded-full px-7 py-4 text-base font-semibold">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          <span class="relative z-10">Call +1&nbsp;(417)&nbsp;614-3460</span>
+        </a>
+        <a href="/talk" class="btn btn-ghost flex items-center justify-center gap-2.5 rounded-full px-7 py-4 text-base font-medium">
+          Start on the web
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+      </div>
+      <p class="reveal in s3 mt-4 text-xs text-[color:var(--muted)]">
+        US number for now · or talk right here in your browser, no call needed.
+      </p>
 
-  <!-- SIGN-IN OVERLAY -->
-  <section id="auth">
-    <div class="card w-[min(92vw,420px)] px-9 py-11 text-center">
-      <div class="mx-auto mb-7 h-14 w-14 rounded-full bg-gradient-to-br from-[#f3c07a] to-[#e58e76] shadow-[0_0_50px_-6px_rgba(240,160,90,.8)]"></div>
-      <h1 class="display wordmark text-4xl sm:text-5xl tracking-tight leading-none">HowzYour<span class="day">Day</span></h1>
-      <p class="mt-3 text-[15px] leading-relaxed text-[color:var(--muted)]">Call in, talk through your day.<br>I’ll be here, and I’ll remember you.</p>
+      <!-- PILLARS -->
+      <div class="mt-16 grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
+        <div class="reveal card lift px-5 py-6 text-left">
+          <p class="display text-xl">Just a phone call</p>
+          <p class="mt-1.5 text-sm leading-relaxed text-[color:var(--muted)]">No download, no sign-up wall. Dial the number like you'd call a friend.</p>
+        </div>
+        <div class="reveal s1 card lift px-5 py-6 text-left">
+          <p class="display text-xl">Remembers you</p>
+          <p class="mt-1.5 text-sm leading-relaxed text-[color:var(--muted)]">Your name, your people, the thing you were dreading - it picks up where you left off.</p>
+        </div>
+        <div class="reveal s2 card lift px-5 py-6 text-left">
+          <p class="display text-xl">For the end of the day</p>
+          <p class="mt-1.5 text-sm leading-relaxed text-[color:var(--muted)]">Someone who picks up at 11pm, listens, and still has it tomorrow.</p>
+        </div>
+      </div>
+    </main>
 
-      <form id="magicForm" class="mt-8 flex flex-col gap-3">
-        <input id="email" type="email" required autocomplete="email" placeholder="you@email.com"
-               class="field w-full rounded-xl px-4 py-3 text-center text-sm text-[color:var(--cream)] placeholder:text-[color:var(--muted)]/70" />
-        <button class="gbtn rounded-full bg-gradient-to-b from-[#f3c07a] to-[#e89a52] px-6 py-3.5 font-medium text-[#231712]">Let’s talk</button>
-      </form>
-      <p id="maghint" class="mt-3 text-xs text-[color:var(--muted)]">Pop in your email and I’ll send you a one-tap link.</p>
+    <!-- WHAT IT'S LIKE - the self-typing demo -->
+    <section id="feel" class="mx-auto max-w-2xl px-6 pb-24">
+      <p class="reveal text-center text-[11px] uppercase tracking-[0.3em] text-[color:var(--muted)]">what it's like</p>
+      <h2 class="reveal s1 display mt-3 text-center text-3xl tracking-tight sm:text-4xl">It was listening last time.</h2>
+      <div class="reveal s2 card mt-9 px-5 py-6 sm:px-7">
+        <div class="flex items-center gap-2.5 border-b border-white/10 pb-4">
+          <span class="dots inline-flex"><span></span><span></span><span></span></span>
+          <span class="text-xs text-[color:var(--muted)]">HowzYourDay · a recent evening</span>
+        </div>
+        <div id="thread" class="mt-5 flex min-h-[260px] flex-col gap-3"></div>
+      </div>
+    </section>
 
-      <div id="sent" class="hidden mt-6 rounded-xl border border-white/10 bg-white/5 px-4 py-4 text-sm leading-relaxed text-[color:var(--cream)]/90"></div>
-      <p id="autherr" class="mt-4 text-sm text-rose-300/90"></p>
-    </div>
-  </section>
+    <!-- HOW IT WORKS -->
+    <section id="how" class="mx-auto max-w-3xl px-6 pb-24">
+      <h2 class="reveal display text-center text-3xl tracking-tight sm:text-4xl">How it works</h2>
+      <ol class="mt-10 space-y-5">
+        <li class="reveal card flex items-start gap-4 px-6 py-5">
+          <span class="display mt-0.5 text-2xl text-[color:var(--honey)]">1</span>
+          <div><p class="font-semibold">Call in, or open the web companion</p>
+            <p class="mt-1 text-sm leading-relaxed text-[color:var(--muted)]">Your phone number - or your email on the web - is your identity. Nothing else to set up.</p></div>
+        </li>
+        <li class="reveal s1 card flex items-start gap-4 px-6 py-5">
+          <span class="display mt-0.5 text-2xl text-[color:var(--honey)]">2</span>
+          <div><p class="font-semibold">Talk through your day</p>
+            <p class="mt-1 text-sm leading-relaxed text-[color:var(--muted)]">Answers in the first half-second, like a friend who picks up - no spinner, no "let me look that up."</p></div>
+        </li>
+        <li class="reveal s2 card flex items-start gap-4 px-6 py-5">
+          <span class="display mt-0.5 text-2xl text-[color:var(--honey)]">3</span>
+          <div><p class="font-semibold">Hang up - it remembers</p>
+            <p class="mt-1 text-sm leading-relaxed text-[color:var(--muted)]">It quietly keeps what matters: your people, your open threads, your mood over time. Next call, it already knows you.</p></div>
+        </li>
+      </ol>
+    </section>
+
+    <!-- UNDER THE HOOD - product + technical depth -->
+    <section class="mx-auto max-w-3xl px-6 pb-24">
+      <div class="reveal card px-7 py-9 text-center">
+        <p class="text-[11px] uppercase tracking-[0.3em] text-[color:var(--muted)]">under the hood</p>
+        <p class="display mx-auto mt-3 max-w-xl text-2xl leading-snug sm:text-[27px]">
+          A voice you'd call back has to be two things that pull against each other:
+          <span class="day">instant</span> in the first half-second, and <span class="day">intimate</span> - it remembers you between calls.
+        </p>
+        <p class="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-[color:var(--muted)]">
+          Every design choice serves one of those, or the tension between them - a fast profile card on the hot path,
+          deeper semantic memory only when you ask about the past.
+        </p>
+        <div class="mt-7 flex flex-wrap items-center justify-center gap-2.5">
+          <span class="chip"><b>Cartesia Line</b> · voice</span>
+          <span class="chip"><b>OpenRouter</b> · LLM</span>
+          <span class="chip"><b>Redis</b> · fast profile</span>
+          <span class="chip"><b>Mem0</b> · semantic recall</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-white/10">
+      <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-[color:var(--muted)] sm:flex-row">
+        <p class="display wordmark text-lg">HowzYour<span class="day">Day</span> <span class="text-[color:var(--muted)]/70">· howzyour.day</span></p>
+        <div class="flex items-center gap-6">
+          <a class="navlink" href="https://github.com/ankitaggarwal/howzyour.day" target="_blank" rel="noopener">GitHub ↗</a>
+          <span>Open source · MIT</span>
+        </div>
+      </div>
+      <p class="pb-8 text-center text-xs text-[color:var(--muted)]/70">Something I built for fun, by Ankit Aggarwal. Open source.</p>
+    </footer>
+  </div>
 
   <script>
-  const $ = (id) => document.getElementById(id);
-  let me = { authenticated: false };
-  let ws, ctx, micStream, source, processor, streamId;
-  let active = false, inLevel = 0, outLevel = 0, playHead = 0, sources = [];
+  const REDUCE = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // ---------- boot ----------
-  (async function init() {
-    const err = new URLSearchParams(location.search).get('error');
-    if (err === 'expired') $('autherr').textContent = 'That link expired. Pop your email in for a fresh one.';
-    else if (err) $('autherr').textContent = 'That sign-in link didn’t work. Try once more.';
-    try { me = await (await fetch('/api/me')).json(); } catch {}
-    if (me.authenticated) {
-      document.body.classList.add('authed');
-      $('hello').textContent = greeting(me.user && me.user.name);
-    } else if (me.email_configured === false) {
-      $('autherr').textContent = 'Email sign-in isn’t set up yet.';
+  // ---------- pointer parallax (atmosphere + orb gaze) ----------
+  const pointer = { x: 0, y: 0 };           // -1..1
+  if (!REDUCE) {
+    window.addEventListener('pointermove', (e) => {
+      pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+      pointer.y = (e.clientY / window.innerHeight) * 2 - 1;
+      document.documentElement.style.setProperty('--px', pointer.x.toFixed(3));
+      document.documentElement.style.setProperty('--py', pointer.y.toFixed(3));
+    }, { passive: true });
+  }
+
+  // ---------- Echo orb: breathing + cursor gaze + speaks during the demo ----------
+  const orbState = { hover: 0, speak: 0, gx: 0, gy: 0 };
+  (function () {
+    const cv = document.getElementById('orb');
+    if (!cv) return;
+    const c = cv.getContext('2d'), w = cv.width, h = cv.height, cx = w / 2, cy = h / 2;
+    const IDLE = [223, 149, 99], WARM = [242, 190, 121], SPEAK = [231, 138, 118];
+    let cur = IDLE.slice();
+    cv.parentElement.addEventListener('mouseenter', () => orbState.hover = 1);
+    cv.parentElement.addEventListener('mouseleave', () => orbState.hover = 0);
+
+    function lerp(a) { for (let i = 0; i < 3; i++) cur[i] += (a[i] - cur[i]) * 0.05; }
+
+    function loop() {
+      const t = performance.now();
+      c.clearRect(0, 0, w, h);
+      const breath = 0.5 + 0.5 * Math.sin(t * 0.0011);
+      const target = orbState.speak ? SPEAK : (orbState.hover ? WARM : IDLE);
+      lerp(target);
+      const r = Math.round(cur[0]), g = Math.round(cur[1]), b = Math.round(cur[2]);
+
+      // ease the gaze toward the pointer
+      orbState.gx += (pointer.x - orbState.gx) * 0.06;
+      orbState.gy += (pointer.y - orbState.gy) * 0.06;
+      const gx = REDUCE ? 0 : orbState.gx, gy = REDUCE ? 0 : orbState.gy;
+
+      const energy = 0.12 + breath * (0.10 + orbState.hover * 0.05) + orbState.speak * 0.16;
+      const base = Math.min(w, h) * 0.16;
+      const R = base * (1 + energy * 0.5);
+      const ox = cx + gx * R * 0.18, oy = cy + gy * R * 0.18;
+
+      // soft expanding rings (livelier while speaking)
+      const rings = orbState.speak ? 0.18 : 0.10;
+      for (let i = 0; i < 3; i++) {
+        const pr = ((t * 0.00018 * (1 + orbState.speak)) + i / 3) % 1;
+        c.beginPath();
+        c.strokeStyle = `rgba(${r},${g},${b},${(1 - pr) * rings})`;
+        c.lineWidth = 1.5;
+        c.arc(ox, oy, R * (1 + pr * 1.6), 0, 7); c.stroke();
+      }
+      // outer bloom
+      let g1 = c.createRadialGradient(ox, oy, R * 0.3, ox, oy, R * 2.1);
+      g1.addColorStop(0, `rgba(${r},${g},${b},${.4 + orbState.speak * 0.15})`);
+      g1.addColorStop(0.45, `rgba(${r},${g},${b},.12)`);
+      g1.addColorStop(1, `rgba(${r},${g},${b},0)`);
+      c.fillStyle = g1; c.beginPath(); c.arc(ox, oy, R * 2.1, 0, 7); c.fill();
+      // lit core (highlight leans toward the gaze)
+      const hx = ox - R * (0.28 - gx * 0.12), hy = oy - R * (0.30 - gy * 0.12);
+      let g2 = c.createRadialGradient(hx, hy, R * 0.08, ox, oy, R);
+      g2.addColorStop(0, 'rgba(255,240,214,.97)');
+      g2.addColorStop(0.38, `rgba(${r},${g},${b},.96)`);
+      g2.addColorStop(1, `rgba(${Math.round(r * 0.62)},${Math.round(g * 0.46)},${Math.round(b * 0.5)},.95)`);
+      c.save(); c.shadowBlur = 50 + orbState.speak * 40; c.shadowColor = `rgba(${r},${g},${b},.7)`;
+      c.fillStyle = g2; c.beginPath(); c.arc(ox, oy, R, 0, 7); c.fill(); c.restore();
+      // sheen
+      c.save(); c.globalCompositeOperation = 'overlay';
+      const a = t * 0.0006, sx = ox + Math.cos(a) * R * 0.26, sy = oy + Math.sin(a) * R * 0.26;
+      let g3 = c.createRadialGradient(sx, sy, 0, sx, sy, R * 0.95);
+      g3.addColorStop(0, 'rgba(255,255,255,.22)'); g3.addColorStop(1, 'rgba(255,255,255,0)');
+      c.fillStyle = g3; c.beginPath(); c.arc(ox, oy, R, 0, 7); c.fill(); c.restore();
+
+      requestAnimationFrame(loop);
     }
     requestAnimationFrame(loop);
   })();
 
-  function greeting(name) {
-    const h = new Date().getHours();
-    const part = h < 5 ? 'Still up' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : h < 21 ? 'Good evening' : 'Winding down';
-    return name ? `${part}, ${name}.` : `${part}.`;
+  // ---------- scroll reveals ----------
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.18 });
+  document.querySelectorAll('.reveal:not(.in)').forEach((el) => io.observe(el));
+
+  // ---------- the self-typing conversation ----------
+  const SCRIPT = [
+    { who: 'echo', text: "Hey, welcome back. Did the presentation end up happening?" },
+    { who: 'you',  text: "It did. Went better than I feared." },
+    { who: 'echo', text: "I had a feeling. ", mem: "You were pretty nervous about it last time.", memtag: "remembered from your last call" },
+    { who: 'you',  text: "Yeah. Glad it's behind me." },
+    { who: 'echo', text: "Then that's the headline for today. Anything else on your mind?" },
+  ];
+  const thread = document.getElementById('thread');
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  async function typeInto(el, text, caret) {
+    if (REDUCE) { el.textContent = text; return; }
+    el.classList.add('caret');
+    for (let i = 0; i < text.length; i++) { el.textContent = text.slice(0, i + 1); await sleep(18 + Math.random() * 26); }
+    if (!caret) el.classList.remove('caret');
   }
 
-  $('magicForm') && $('magicForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = $('email').value.trim();
-    const btn = e.submitter; if (btn) btn.disabled = true;
-    $('autherr').textContent = '';
-    try {
-      const r = await fetch('/auth/request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
-      const d = await r.json().catch(() => ({}));
-      if (r.ok) {
-        $('magicForm').classList.add('hidden');
-        $('maghint').classList.add('hidden');
-        $('sent').classList.remove('hidden');
-        $('sent').textContent = `Check your inbox. I just sent a one-tap link to ${email}. It expires in 30 minutes.`;
-      } else {
-        $('autherr').textContent = d.detail || 'Couldn’t send the link. Try again.';
-        if (btn) btn.disabled = false;
+  async function runDemo() {
+    thread.innerHTML = '';
+    for (const line of SCRIPT) {
+      if (line.who === 'echo') orbState.speak = 1;
+      const b = document.createElement('div');
+      b.className = 'bubble ' + line.who;
+      thread.appendChild(b);
+      if (REDUCE) {
+        b.innerHTML = line.text + (line.mem ? `<span class="mem">${line.mem}</span>` : '');
+        if (line.memtag) { const t = document.createElement('div'); t.className = 'memtag in'; t.textContent = '✦ ' + line.memtag; b.appendChild(t); }
+        continue;
       }
-    } catch { $('autherr').textContent = 'Network error. Try again.'; if (btn) btn.disabled = false; }
-  });
-
-  // ---------- audio helpers ----------
-  function f32ToB64(f) {
-    const i = new Int16Array(f.length);
-    for (let n = 0; n < f.length; n++) { let s = Math.max(-1, Math.min(1, f[n])); i[n] = s < 0 ? s * 0x8000 : s * 0x7fff; }
-    const b = new Uint8Array(i.buffer); let str = '';
-    for (let n = 0; n < b.length; n++) str += String.fromCharCode(b[n]);
-    return btoa(str);
-  }
-  function b64ToF32(b64) {
-    const bin = atob(b64), b = new Uint8Array(bin.length);
-    for (let n = 0; n < bin.length; n++) b[n] = bin.charCodeAt(n);
-    const i = new Int16Array(b.buffer), f = new Float32Array(i.length);
-    for (let n = 0; n < i.length; n++) f[n] = i[n] / 0x8000;
-    return f;
-  }
-  function rms(f) { let s = 0; for (let i = 0; i < f.length; i++) s += f[i] * f[i]; return Math.sqrt(s / f.length); }
-
-  // ---------- session ----------
-  const wsUrl = () => (location.protocol === 'https:' ? 'wss' : 'ws') + '://' + location.host + '/ws';
-
-  async function start() {
-    if (active) return;
-    active = true; setStatus('connecting');
-    try {
-      ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
-      micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
-    } catch (e) { active = false; setStatus('mic blocked'); return; }
-
-    streamId = (crypto.randomUUID && crypto.randomUUID()) || String(Date.now());
-    ws = new WebSocket(wsUrl());
-    ws.onopen = () => {
-      ws.send(JSON.stringify({ event: 'start', stream_id: streamId, config: { input_format: 'pcm_44100' } }));
-      setStatus('listening'); startCapture();
-    };
-    ws.onmessage = (ev) => {
-      let d; try { d = JSON.parse(ev.data); } catch { return; }
-      if (d.event === 'media_output' && d.media && d.media.payload) { const f = b64ToF32(d.media.payload); outLevel = Math.min(1, rms(f) * 5); playChunk(f); setStatus('speaking'); }
-      else if (d.event === 'clear') { flush(); setStatus('listening'); }
-      else if (d.event === 'error') setStatus('error');
-    };
-    ws.onclose = (e) => { const why = e.reason || ''; teardown(); setStatus(why ? 'ended' : 'tap to begin'); };
-    ws.onerror = () => setStatus('connection error');
-  }
-
-  function startCapture() {
-    source = ctx.createMediaStreamSource(micStream);
-    processor = ctx.createScriptProcessor(2048, 1, 1);
-    const mute = ctx.createGain(); mute.gain.value = 0;
-    source.connect(processor); processor.connect(mute); mute.connect(ctx.destination);
-    processor.onaudioprocess = (e) => {
-      if (!ws || ws.readyState !== 1) return;
-      const f = e.inputBuffer.getChannelData(0);
-      inLevel = Math.min(1, rms(f) * 5);
-      ws.send(JSON.stringify({ event: 'media_input', stream_id: streamId, media: { payload: f32ToB64(f) } }));
-    };
-  }
-
-  function playChunk(f) {
-    if (!ctx) return;
-    const buf = ctx.createBuffer(1, f.length, 44100); buf.copyToChannel(f, 0);
-    const s = ctx.createBufferSource(); s.buffer = buf; s.connect(ctx.destination);
-    const now = ctx.currentTime; if (playHead < now) playHead = now;
-    s.start(playHead); playHead += buf.duration; sources.push(s);
-    s.onended = () => { sources = sources.filter((x) => x !== s); };
-  }
-  function flush() { sources.forEach((s) => { try { s.stop(); } catch {} }); sources = []; playHead = 0; outLevel = 0; }
-
-  function teardown() {
-    active = false;
-    try { processor && processor.disconnect(); } catch {}
-    try { source && source.disconnect(); } catch {}
-    micStream && micStream.getTracks().forEach((t) => t.stop());
-    flush();
-    try { ctx && ctx.close(); } catch {}
-    ctx = null; ws = null; inLevel = 0;
-  }
-  function stop() {
-    if (!active) return;
-    if (ws && ws.readyState === 1) { try { ws.close(1000, 'user ended'); } catch {} }
-    teardown(); setStatus('tap to begin');
-  }
-  const setStatus = (t) => { $('status').textContent = t; };
-
-  // ---------- the orb ----------
-  const C_IDLE = [223, 149, 99], C_LISTEN = [242, 190, 121], C_SPEAK = [231, 138, 118];
-  let cur = C_IDLE.slice();
-  function lerp(a, t) { for (let i = 0; i < 3; i++) cur[i] += (a[i] - cur[i]) * 0.06; }
-
-  function loop() {
-    const cv = $('orb');
-    if (cv) {
-      const c = cv.getContext('2d'), w = cv.width, h = cv.height, cx = w / 2, cy = h / 2;
-      const t = performance.now();
-      c.clearRect(0, 0, w, h);
-
-      const breath = 0.5 + 0.5 * Math.sin(t * 0.0011);
-      const lvl = Math.max(inLevel, outLevel);
-      const speaking = outLevel > inLevel + 0.02;
-      lerp(active ? (speaking ? C_SPEAK : C_LISTEN) : C_IDLE, 1);
-      const r = Math.round(cur[0]), g = Math.round(cur[1]), b = Math.round(cur[2]);
-
-      const energy = (active ? 0.22 : 0.10) + lvl * 0.7 + breath * (active ? 0.05 : 0.10);
-      const base = Math.min(w, h) * 0.15;
-      const R = base * (1 + energy * 0.45);
-
-      // expanding sound rings (only live)
-      if (active) {
-        for (let i = 0; i < 3; i++) {
-          const pr = ((t * 0.00026) + i / 3) % 1;
-          c.beginPath();
-          c.strokeStyle = `rgba(${r},${g},${b},${(1 - pr) * (0.12 + lvl * 0.18)})`;
-          c.lineWidth = 1.5;
-          c.arc(cx, cy, R * (1 + pr * 1.5), 0, 7); c.stroke();
+      const span = document.createElement('span'); b.appendChild(span);
+      await typeInto(span, line.text, !!line.mem);
+      if (line.mem) {
+        const m = document.createElement('span'); m.className = 'mem'; b.appendChild(m);
+        await typeInto(m, line.mem, false);
+        b.querySelector('.caret') && b.querySelector('.caret').classList.remove('caret');
+        if (line.memtag) {
+          const tag = document.createElement('div'); tag.className = 'memtag'; tag.textContent = '✦ ' + line.memtag; b.appendChild(tag);
+          requestAnimationFrame(() => tag.classList.add('in'));
         }
       }
-      // outer bloom
-      let g1 = c.createRadialGradient(cx, cy, R * 0.3, cx, cy, R * 2.1);
-      g1.addColorStop(0, `rgba(${r},${g},${b},${0.42 + lvl * 0.3})`);
-      g1.addColorStop(0.45, `rgba(${r},${g},${b},.12)`);
-      g1.addColorStop(1, `rgba(${r},${g},${b},0)`);
-      c.fillStyle = g1; c.beginPath(); c.arc(cx, cy, R * 2.1, 0, 7); c.fill();
-      // lit core sphere
-      const hx = cx - R * 0.28, hy = cy - R * 0.30;
-      let g2 = c.createRadialGradient(hx, hy, R * 0.08, cx, cy, R);
-      g2.addColorStop(0, 'rgba(255,240,214,.97)');
-      g2.addColorStop(0.38, `rgba(${r},${g},${b},.96)`);
-      g2.addColorStop(1, `rgba(${Math.round(r * 0.62)},${Math.round(g * 0.46)},${Math.round(b * 0.5)},.95)`);
-      c.save(); c.shadowBlur = 55 + lvl * 70; c.shadowColor = `rgba(${r},${g},${b},.7)`;
-      c.fillStyle = g2; c.beginPath(); c.arc(cx, cy, R, 0, 7); c.fill(); c.restore();
-      // slow rotating sheen
-      c.save(); c.globalCompositeOperation = 'overlay';
-      const a = t * 0.0006, sx = cx + Math.cos(a) * R * 0.26, sy = cy + Math.sin(a) * R * 0.26;
-      let g3 = c.createRadialGradient(sx, sy, 0, sx, sy, R * 0.95);
-      g3.addColorStop(0, 'rgba(255,255,255,.22)'); g3.addColorStop(1, 'rgba(255,255,255,0)');
-      c.fillStyle = g3; c.beginPath(); c.arc(cx, cy, R, 0, 7); c.fill(); c.restore();
-
-      inLevel *= 0.90; outLevel *= 0.92;
+      orbState.speak = 0;
+      await sleep(line.who === 'echo' ? 650 : 450);
     }
-    requestAnimationFrame(loop);
+    if (!REDUCE) { await sleep(4200); runDemo(); }   // gently loop
   }
 
-  // ---------- controls ----------
-  function toggle() { active ? stop() : start(); }
-  $('orbBtn') && $('orbBtn').addEventListener('click', toggle);
-  document.addEventListener('keydown', (e) => {
-    if (e.code === 'Space' && me.authenticated && e.target.tagName !== 'INPUT') { e.preventDefault(); toggle(); }
-  });
-  $('signout') && $('signout').addEventListener('click', async () => { await fetch('/api/logout', { method: 'POST' }); location.reload(); });
-  $('callForm') && $('callForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const to = $('phone').value.trim();
-    $('callmsg').textContent = 'Calling you…';
-    try {
-      const r = await fetch('/api/get-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to_number: to }) });
-      const d = await r.json().catch(() => ({}));
-      $('callmsg').textContent = r.ok ? 'On its way. Your phone should ring shortly.' : ('Couldn’t place the call: ' + (d.detail || d.error || r.status));
-    } catch { $('callmsg').textContent = 'Network error placing the call.'; }
-  });
+  // start typing only once the demo scrolls into view
+  const demoEl = document.getElementById('feel');
+  let started = false;
+  const demoIO = new IntersectionObserver((entries) => {
+    entries.forEach((e) => { if (e.isIntersecting && !started) { started = true; runDemo(); demoIO.disconnect(); } });
+  }, { threshold: 0.3 });
+  demoIO.observe(demoEl);
   </script>
 </body>
 </html>

@@ -2,19 +2,19 @@
 
 There are two independent pieces:
 
-1. **The voice agent** — deployed to **Cartesia**. You connect this GitHub repo
+1. **The voice agent** - deployed to **Cartesia**. You connect this GitHub repo
    to Cartesia and it auto-deploys `main.py` on push. Its secrets
    (`OPENROUTER_API_KEY`, Upstash, Mem0) are set in the Cartesia dashboard. The
    droplet below is **not** involved in the phone agent.
 
-2. **The web companion** (`web/`) — the browser version of the same agent. That
+2. **The web companion** (`web/`) - the browser version of the same agent. That
    is what we deploy on a DigitalOcean droplet here, behind `howzyour.day`.
 
 The web companion runs in two small containers on one droplet:
 
 | Container | What it does |
 |-----------|--------------|
-| `web`   | The FastAPI app — email sign-in, the voice UI, and the `/ws` proxy to Cartesia |
+| `web`   | The FastAPI app - email sign-in, the voice UI, and the `/ws` proxy to Cartesia |
 | `caddy` | Reverse proxy that gives the site free automatic HTTPS |
 
 Everything stateful (Cartesia, OpenRouter, Redis, Mem0, SMTP) lives elsewhere
@@ -87,7 +87,8 @@ docker compose ps         # both should be "running"
 docker compose logs -f    # follow logs (Ctrl-C to stop following)
 ```
 
-Visit **https://howzyour.day** — sign in by email, press space, and talk.
+Visit **https://howzyour.day** - the landing page. Tap **Start on the web**
+(the `/talk` route) to sign in by email, press space, and talk.
 
 ---
 

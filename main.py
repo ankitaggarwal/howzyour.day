@@ -1,5 +1,5 @@
 """
-HowzYourDay — voice agent entry point (Cartesia Line SDK 0.2.10).
+HowzYourDay - voice agent entry point (Cartesia Line SDK 0.2.10).
 
 Flow:
   - get_agent(): on each call, resolve the caller's phone, load their memory,
@@ -31,7 +31,7 @@ import prompts
 # All models go through OpenRouter (LiteLLM reads OPENROUTER_API_KEY from env too).
 _AGENT_API_KEY = config.OPENROUTER_API_KEY
 # Resolve the best available model once at worker boot (prefers Gemini 2.5 Flash,
-# falls back gracefully). Bounded + safe — never blocks startup.
+# falls back gracefully). Bounded + safe - never blocks startup.
 MODEL = config.resolve_model()
 
 

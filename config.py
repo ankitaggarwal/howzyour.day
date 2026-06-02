@@ -1,13 +1,13 @@
 """
-HowzYourDay — settings.
+HowzYourDay - settings.
 
 Secrets come from the environment (no hardcoded keys). For local runs put them
 in a .env (gitignored); for deploy set them in the Cartesia dashboard's env.
 
 Backends:
   - LLM      : OpenRouter via LiteLLM (model = openrouter/<slug>), key OPENROUTER_API_KEY.
-  - Hot store: Upstash Redis (REST) — the fast per-caller profile card.
-  - Semantic : Mem0 Platform (hosted) — conversational long-term memory.
+  - Hot store: Upstash Redis (REST) - the fast per-caller profile card.
+  - Semantic : Mem0 Platform (hosted) - conversational long-term memory.
 """
 
 import os
@@ -65,7 +65,7 @@ def reasoning_off_kwargs() -> dict:
 
     Gemini 2.5 Flash is a hybrid-reasoning model; Line defaults reasoning_effort to
     "low" (a 1024-token thinking budget every turn), which adds a silent pause before
-    the first spoken word — bad for a voice loop. We don't need reasoning for casual
+    the first spoken word - bad for a voice loop. We don't need reasoning for casual
     conversation, so we turn it off.
 
     OpenRouter doesn't accept litellm's `reasoning_effort`, so we pass OpenRouter's

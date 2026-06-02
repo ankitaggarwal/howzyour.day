@@ -1,5 +1,5 @@
 """
-HowzYourDay — web companion backend.
+HowzYourDay - web companion backend.
 
 A thin FastAPI app that lets a signed-in user talk to the SAME Cartesia agent
 from the browser (no phone, no international call). It does four things:
@@ -11,7 +11,8 @@ from the browser (no phone, no international call). It does four things:
                         identity as metadata.from = "web:<hash>", which the
                         agent reads in get_agent -> same Redis/Mem0 memory.
   3. /api/get-call   -> outbound: Cartesia calls the user's phone number.
-  4. /               -> serves the single-page voice UI.
+  4. /               -> the landing page (dial the number, or start on the web).
+     /talk           -> the single-page voice UI (sign in, then talk).
 
 Identity parity: phone callers are keyed by E.164; web users by web:<hash(email)>.
 Both flow through the agent's existing memory layer unchanged.
@@ -78,7 +79,7 @@ _signer = URLSafeTimedSerializer(SESSION_SECRET, salt="howzyourday-magic-link")
 
 
 def web_user_id(email: str) -> str:
-    """Stable, short, non-reversible id from the email — the web counterpart to E.164."""
+    """Stable, short, non-reversible id from the email - the web counterpart to E.164."""
     return "web:" + hashlib.sha256(email.strip().lower().encode()).hexdigest()[:16]
 
 
@@ -134,11 +135,11 @@ def auth_verify(request: Request, token: str = ""):
     try:
         email = _signer.loads(token, max_age=MAGIC_MAX_AGE)
     except SignatureExpired:
-        return RedirectResponse("/?error=expired")
+        return RedirectResponse("/talk?error=expired")
     except Exception:
-        return RedirectResponse("/?error=link")
+        return RedirectResponse("/talk?error=link")
     request.session["user"] = {"email": email, "name": email.split("@")[0]}
-    return RedirectResponse("/")
+    return RedirectResponse("/talk")
 
 
 @app.get("/api/me")
@@ -280,8 +281,15 @@ async def get_call(request: Request):
 # =============================================================================
 
 @app.get("/")
-def index():
+def home():
+    """The landing page: dial the number, or start on the web."""
     return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
+
+@app.get("/talk")
+def talk():
+    """The voice app: email sign-in, then talk from the browser."""
+    return FileResponse(os.path.join(FRONTEND_DIR, "talk.html"))
 
 
 if __name__ == "__main__":

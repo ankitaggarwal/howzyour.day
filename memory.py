@@ -1,10 +1,10 @@
 """
-HowzYourDay — memory.
+HowzYourDay - memory.
 
 Two backends, one identity (the E.164 phone as user_id):
 
   - PROFILE  : a rich structured card per caller, stored as ONE JSON value in
-               Upstash Redis (fetched by key — no scan, no search). Fronted by a
+               Upstash Redis (fetched by key - no scan, no search). Fronted by a
                per-worker in-process cache. This is the latency-critical path.
   - SEMANTIC : Mem0 Platform (hosted). We send raw conversation turns; Mem0's
                own LLM extracts/embeds/stores them. Searched on demand mid-call
@@ -32,10 +32,9 @@ import prompts
 _redis = None
 _mem0 = None
 
-# In-process profile cache (per worker; zero network hop). Upstash is fast but
-# still one HTTPS round-trip; a repeat read inside the same hot worker is 0ms.
-# Upstash is the shared source of truth; this dict is the zero-hop fast lane.
-# Short TTL bounds cross-worker staleness; save_profile/_delete_profile keep it consistent.
+# In-process profile cache (per worker). Upstash is the shared source of truth,
+# but a repeat read in the same hot worker should skip even its one HTTPS hop.
+# Short TTL bounds cross-worker staleness; save/delete keep this dict consistent.
 _PROFILE_CACHE_TTL = 120  # seconds
 _profile_cache: dict = {}  # user_id -> (expiry_monotonic, profile_json)
 
@@ -112,7 +111,7 @@ def _mem0_client():
 
 
 # =============================================================================
-# Profile (fast structured record — Upstash Redis)
+# Profile (fast structured record - Upstash Redis)
 # =============================================================================
 
 def empty_profile(phone: str) -> dict:
@@ -258,7 +257,7 @@ def format_profile_for_prompt(profile: dict) -> str:
 
 
 # =============================================================================
-# Semantic memory (Mem0 Platform — hosted)
+# Semantic memory (Mem0 Platform - hosted)
 # =============================================================================
 
 def add_call_memory(user_id: str, messages: List[dict], metadata: Optional[dict] = None, infer: bool = True):

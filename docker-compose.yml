@@ -2,7 +2,7 @@
 #   web   - the HowzYourDay web companion (FastAPI + the single-page voice UI)
 #   caddy - reverse proxy that terminates HTTPS and forwards to web
 #
-# The voice AGENT itself runs on Cartesia, not here — this droplet only serves
+# The voice AGENT itself runs on Cartesia, not here - this droplet only serves
 # the browser companion. Redis, Mem0, OpenRouter and Cartesia are all external
 # and configured via web/backend/.env, so there's no database to run here.
 
