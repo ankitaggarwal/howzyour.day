@@ -34,3 +34,9 @@ build/
 AGENTS.md
 CLAUDE.md
 CLAUDE.local.md
+
+# LinkedIn promo card sources + launch kit (local-only)
+linkedin/
+
+# Slide-deck source (published to the gh-pages branch)
+deck/

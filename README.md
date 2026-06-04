@@ -2,6 +2,10 @@
 
 A voice journaling companion on **Cartesia Line**. Call in, talk through your day, hang up - it remembers you next time. The caller's phone number is their identity; memory uses **Upstash Redis** (fast profile card) + **Mem0 Platform** (semantic recall), with the LLM served via **OpenRouter**.
 
+🌐 **Live:** [howzyour.day](https://howzyour.day) · 🖼 **Deck:** [the 12-slide story](https://ankitaggarwal.github.io/howzyour.day/)
+
+![HowzYourDay - a voice companion you call at the end of the day; it remembers you next time](screenshots/howzyourday-app.png)
+
 ## Files (flat and simple)
 
 ```
@@ -17,6 +21,8 @@ tests/test_memory.py   # live verification of the memory layer
 - **On a call** (`get_agent`): resolve the caller's phone → load their memory → build a `TodayAgent` (one `LlmAgent`) with a personalized system prompt and greeting.
 - **During the call**: a background `recall_memory` tool does on-demand semantic search when the caller asks about the past ("remember when…"), masked by a filler line.
 - **On hang-up** (`CallEnded`): extract structured info from the transcript and persist it.
+
+![One identity, one agent: an instant Redis profile card on the hot path, deeper Mem0 semantic recall on demand](screenshots/howzyourday-architecture.png)
 
 ## Memory - two backends, one identity
 
