@@ -1,0 +1,28 @@
+<div class="slide-inner">
+  <div class="slide-content" style="flex-direction:row;align-items:center;gap:48px">
+    <div style="flex:1.1">
+      <div class="kicker anim d1">instant · the hot path</div>
+      <h2 class="anim d2" style="font-size:56px">The greeting can't <span class="g">wait</span>.</h2>
+      <p class="anim d3 lead" style="margin-top:6px">A small profile card lives in Redis, fetched <b>by key</b> — no scan — with a per-worker in-process cache. That's what lands the hello in the first half-second, before any heavy lookup runs.</p>
+      <div class="anim d4" style="display:flex;flex-wrap:wrap;gap:11px;margin-top:26px">
+        <span class="chip">fetched by key · no scan</span>
+        <span class="chip">per-worker cache</span>
+        <span class="chip"><b>latency-critical</b></span>
+      </div>
+    </div>
+    <div class="anim d3 card" style="flex:.9;padding:24px;font-family:var(--mono);font-size:14px;line-height:1.7">
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--honey);margin-bottom:14px">profile card · Redis</div>
+      <div style="color:rgba(243,235,225,.5)">{</div>
+      <div style="padding-left:18px"><span style="color:var(--honey)">"name"</span>: <span style="color:#e9c08a">"Ankit"</span>,</div>
+      <div style="padding-left:18px"><span style="color:var(--honey)">"people"</span>: [<span style="color:#e9c08a">"Maya"</span>, <span style="color:#e9c08a">"the team"</span>],</div>
+      <div style="padding-left:18px"><span style="color:var(--honey)">"open_threads"</span>: [<span style="color:#e9c08a">"the big presentation"</span>],</div>
+      <div style="padding-left:18px"><span style="color:var(--honey)">"mood_trend"</span>: <span style="color:#e9c08a">"lighter this week"</span></div>
+      <div style="color:rgba(243,235,225,.5)">}</div>
+      <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);color:var(--muted);font-family:var(--sans);font-size:13px">one GET, no query planner — the whole "who is this?" in a single round-trip.</div>
+    </div>
+  </div>
+  <div class="s-footer">
+    <div class="brand"><span class="dot"></span> HowzYourDay</div>
+    <div class="pageno">07 / 12</div>
+  </div>
+</div>
